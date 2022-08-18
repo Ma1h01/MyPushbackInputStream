@@ -2,15 +2,22 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+
+// Bytes unread from an array follow first in first out
+// Bytes unread from one byte by byte follow last in last out
+// if there are mix of bytes(from an array and from one by one), must follow
+// rules above
 public class MyPushbackInputStream extends FilterInputStream {
     private MyStack buf;
-    // private InputStream in;
     
     public MyPushbackInputStream(InputStream in) {
         super(in);
         this.buf = new MyStack();
     }
+    
     public MyPushbackInputStream(InputStream in, int size) {
+        // size = the initial size of the array, IT IS NOT A FIXED SIZE
+        // unlike regular PushbackInputStream, the size will grow dynamically.
         super(in);
         this.buf = new MyStack(size);
     }
@@ -26,12 +33,20 @@ public class MyPushbackInputStream extends FilterInputStream {
         if (buf.isEmpty()) return super.read(b, off, len);
         int buf_len = buf.length();
         int count = 0;
-        for (int i = 0; i < buf_len && count < len; i++, off++, count++) { //'count < len' = 'buf' has more bytes than the requested 'len' 
-            b[off] = buf.pop();
+        if (len <= buf_len) { //request NO more bytes than pushback buffer has
+            // i = total number of times to loop through the unread buffer.
+            // count = total number of bytes are read.
+            for (int i = 0; i < len; i++, off++, count++) {
+                b[off] = buf.pop();
+            }
         }
-        if (count < len) {
+        else {// first read the unread bytes from pushback buffer, then read bytes from the stream
+            for (int j = 0; j < buf_len; j++, off++, count++) {
+                b[off] = buf.pop();
+            }
+     
             int left_len = len - buf_len;
-            for (int j = 0; j < left_len; j++, off++, count++) {
+            for (int k = 0; k < left_len; k++, off++, count++) {
                 b[off] = (byte)super.read();
             }
         }

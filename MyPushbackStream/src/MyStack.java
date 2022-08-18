@@ -42,8 +42,12 @@ public class MyStack {
 
     void push(byte[] b, int off, int len) {
         if (this.len + len >= size) expand(len);// use '>=' becuase 'len' is indexed, out of bound when len == size
-        for (int i = off; i < off + len; i++) { // 'off + len' = the index position of the FIRST data
-            push(b[i]);                         // that should not be pushed
+        
+        // since push method is used to unread bytes back to the stream, and after unread, the first read byte
+        // should be [off], the second should be [off + 1] so on, we need to push bytes backward because
+        // Stack follows last in fast out rule.
+        for (int i = (off+len) - 1; i >= off; i--) {
+            push(b[i]);                      
         }
     }
 
